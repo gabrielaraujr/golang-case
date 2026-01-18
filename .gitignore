@@ -9,6 +9,7 @@
 *.so
 *.so.*
 *.dylib
+*/bin/*
 
 # Test binary
 *.test
