@@ -1,0 +1,61 @@
+services:
+  postgresql:
+    image: postgres:18.1-alpine
+    container_name: postgresql
+    restart: always
+    hostname: postgresql
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - platform
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    hostname: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: sqs
+    networks:
+      - platform
+
+  account:
+    build:
+      context: ./account
+    hostname: account
+    container_name: account
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      PORT: 8001
+    depends_on:
+      - postgresql
+      - localstack
+    networks:
+      - platform
+
+  risk-analysis:
+    build:
+      context: ./risk-analysis
+    hostname: risk-analysis
+    container_name: risk-analysis
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    environment:
+      PORT: 8002
+    depends_on:
+      - localstack
+    networks:
+      - platform
+
+networks:
+  platform:
+    driver: bridge

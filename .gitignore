@@ -1,0 +1,29 @@
+# Environment variables
+.env
+.env.local
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Test binary
+*.test
+
+# Coverage
+*.out
+
+# Go workspace
+go.work
+
+# Dependencies
+vendor/
+
+# IDE
+.vscode/
+
+# LocalStack
+.localstack
