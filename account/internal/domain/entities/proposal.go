@@ -1,9 +1,9 @@
 package entities
 
 import (
-	"errors"
 	"time"
 
+	errors "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/google/uuid"
 )
 
@@ -38,16 +38,16 @@ type Address struct {
 
 func NewProposal(fullName, cpf, email, phone string, birthDate time.Time, address Address) (*Proposal, error) {
 	if fullName == "" {
-		return nil, errors.New("full name is required")
+		return nil, errors.ErrFullNameRequired
 	}
 	if cpf == "" {
-		return nil, errors.New("CPF is required")
+		return nil, errors.ErrCPFRequired
 	}
 	if email == "" {
-		return nil, errors.New("email is required")
+		return nil, errors.ErrEmailRequired
 	}
 	if birthDate.IsZero() {
-		return nil, errors.New("birth date is required")
+		return nil, errors.ErrBirthDateRequired
 	}
 
 	return &Proposal{
@@ -66,7 +66,7 @@ func NewProposal(fullName, cpf, email, phone string, birthDate time.Time, addres
 
 func (p *Proposal) Approve() error {
 	if p.Status != StatusAnalyzing {
-		return errors.New("only analyzing proposals can be approved")
+		return errors.ErrOnlyAnalyzingCanBeApproved
 	}
 	p.Status = StatusApproved
 	p.UpdatedAt = time.Now()
@@ -75,7 +75,7 @@ func (p *Proposal) Approve() error {
 
 func (p *Proposal) StartAnalysis() error {
 	if p.Status != StatusPending {
-		return errors.New("only pending proposals can start analysis")
+		return errors.ErrOnlyPendingCanStartAnalysis
 	}
 	p.Status = StatusAnalyzing
 	p.UpdatedAt = time.Now()
@@ -84,7 +84,7 @@ func (p *Proposal) StartAnalysis() error {
 
 func (p *Proposal) Reject() error {
 	if p.Status != StatusPending && p.Status != StatusAnalyzing {
-		return errors.New("only pending or analyzing proposals can be rejected")
+		return errors.ErrOnlyPendingOrAnalyzingCanReject
 	}
 	p.Status = StatusRejected
 	p.UpdatedAt = time.Now()

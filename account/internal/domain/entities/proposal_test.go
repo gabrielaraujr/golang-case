@@ -1,9 +1,11 @@
 package entities
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	domainErrors "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/google/uuid"
 )
 
@@ -102,14 +104,10 @@ func assertError(t *testing.T, err error) {
 	}
 }
 
-func assertErrorMessage(t *testing.T, err error, expected string) {
+func assertErrorIs(t *testing.T, got, want error) {
 	t.Helper()
-	if err == nil {
-		t.Errorf("expected error %q, got nil", expected)
-		return
-	}
-	if err.Error() != expected {
-		t.Errorf("expected error %q, got %q", expected, err.Error())
+	if !errors.Is(got, want) {
+		t.Errorf("expected error %v, got %v", want, got)
 	}
 }
 
@@ -129,10 +127,10 @@ func assertBool(t *testing.T, got bool, message string) {
 
 func TestNewProposal(t *testing.T) {
 	tests := []struct {
-		name    string
-		builder *ProposalBuilder
-		wantErr bool
-		errMsg  string
+		name        string
+		builder     *ProposalBuilder
+		wantErr     bool
+		expectedErr error
 	}{
 		{
 			name:    "should create proposal with valid data",
@@ -140,22 +138,22 @@ func TestNewProposal(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "should return error when full name is empty",
-			builder: NewProposalBuilder().WithFullName(""),
-			wantErr: true,
-			errMsg:  "full name is required",
+			name:        "should return error when full name is empty",
+			builder:     NewProposalBuilder().WithFullName(""),
+			wantErr:     true,
+			expectedErr: domainErrors.ErrFullNameRequired,
 		},
 		{
-			name:    "should return error when CPF is empty",
-			builder: NewProposalBuilder().WithCPF(""),
-			wantErr: true,
-			errMsg:  "CPF is required",
+			name:        "should return error when CPF is empty",
+			builder:     NewProposalBuilder().WithCPF(""),
+			wantErr:     true,
+			expectedErr: domainErrors.ErrCPFRequired,
 		},
 		{
-			name:    "should return error when email is empty",
-			builder: NewProposalBuilder().WithEmail(""),
-			wantErr: true,
-			errMsg:  "email is required",
+			name:        "should return error when email is empty",
+			builder:     NewProposalBuilder().WithEmail(""),
+			wantErr:     true,
+			expectedErr: domainErrors.ErrEmailRequired,
 		},
 		{
 			name:    "should allow empty phone number",
@@ -163,10 +161,10 @@ func TestNewProposal(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "should return error when birth date is zero",
-			builder: NewProposalBuilder().WithBirthDate(time.Time{}),
-			wantErr: true,
-			errMsg:  "birth date is required",
+			name:        "should return error when birth date is zero",
+			builder:     NewProposalBuilder().WithBirthDate(time.Time{}),
+			wantErr:     true,
+			expectedErr: domainErrors.ErrBirthDateRequired,
 		},
 	}
 
@@ -175,7 +173,8 @@ func TestNewProposal(t *testing.T) {
 			proposal, err := tt.builder.BuildWithValidation()
 
 			if tt.wantErr {
-				assertErrorMessage(t, err, tt.errMsg)
+				assertError(t, err)
+				assertErrorIs(t, err, tt.expectedErr)
 				return
 			}
 
@@ -197,7 +196,16 @@ func TestProposalStateTransitions(t *testing.T) {
 
 	t.Run("should return error when starting analysis from analyzing status", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusAnalyzing).Build()
-		assertError(t, p.StartAnalysis())
+		err := p.StartAnalysis()
+		assertError(t, err)
+		assertErrorIs(t, err, domainErrors.ErrOnlyPendingCanStartAnalysis)
+	})
+
+	t.Run("should return error when starting analysis from approved status", func(t *testing.T) {
+		p := NewProposalBuilder().WithStatus(StatusApproved).Build()
+		err := p.StartAnalysis()
+		assertError(t, err)
+		assertErrorIs(t, err, domainErrors.ErrOnlyPendingCanStartAnalysis)
 	})
 
 	t.Run("should transition from analyzing to approved", func(t *testing.T) {
@@ -208,7 +216,16 @@ func TestProposalStateTransitions(t *testing.T) {
 
 	t.Run("should return error when approving from pending status", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
-		assertError(t, p.Approve())
+		err := p.Approve()
+		assertError(t, err)
+		assertErrorIs(t, err, domainErrors.ErrOnlyAnalyzingCanBeApproved)
+	})
+
+	t.Run("should return error when approving from rejected status", func(t *testing.T) {
+		p := NewProposalBuilder().WithStatus(StatusRejected).Build()
+		err := p.Approve()
+		assertError(t, err)
+		assertErrorIs(t, err, domainErrors.ErrOnlyAnalyzingCanBeApproved)
 	})
 
 	t.Run("should transition from pending to rejected", func(t *testing.T) {
@@ -225,7 +242,16 @@ func TestProposalStateTransitions(t *testing.T) {
 
 	t.Run("should return error when rejecting from approved status", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusApproved).Build()
-		assertError(t, p.Reject())
+		err := p.Reject()
+		assertError(t, err)
+		assertErrorIs(t, err, domainErrors.ErrOnlyPendingOrAnalyzingCanReject)
+	})
+
+	t.Run("should return error when rejecting from rejected status", func(t *testing.T) {
+		p := NewProposalBuilder().WithStatus(StatusRejected).Build()
+		err := p.Reject()
+		assertError(t, err)
+		assertErrorIs(t, err, domainErrors.ErrOnlyPendingOrAnalyzingCanReject)
 	})
 }
 
