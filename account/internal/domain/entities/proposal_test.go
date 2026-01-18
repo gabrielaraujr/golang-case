@@ -135,35 +135,35 @@ func TestNewProposal(t *testing.T) {
 		errMsg  string
 	}{
 		{
-			name:    "valid proposal",
+			name:    "should create proposal with valid data",
 			builder: NewProposalBuilder(),
 			wantErr: false,
 		},
 		{
-			name:    "empty full name",
+			name:    "should return error when full name is empty",
 			builder: NewProposalBuilder().WithFullName(""),
 			wantErr: true,
 			errMsg:  "full name is required",
 		},
 		{
-			name:    "empty CPF",
+			name:    "should return error when CPF is empty",
 			builder: NewProposalBuilder().WithCPF(""),
 			wantErr: true,
 			errMsg:  "CPF is required",
 		},
 		{
-			name:    "empty email",
+			name:    "should return error when email is empty",
 			builder: NewProposalBuilder().WithEmail(""),
 			wantErr: true,
 			errMsg:  "email is required",
 		},
 		{
-			name:    "empty phone",
+			name:    "should allow empty phone number",
 			builder: NewProposalBuilder().WithPhone(""),
 			wantErr: false,
 		},
 		{
-			name:    "zero birth date",
+			name:    "should return error when birth date is zero",
 			builder: NewProposalBuilder().WithBirthDate(time.Time{}),
 			wantErr: true,
 			errMsg:  "birth date is required",
@@ -189,83 +189,83 @@ func TestNewProposal(t *testing.T) {
 }
 
 func TestProposalStateTransitions(t *testing.T) {
-	t.Run("start analysis - pending to analyzing", func(t *testing.T) {
+	t.Run("should transition from pending to analyzing", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
 		assertNoError(t, p.StartAnalysis())
 		assertStatus(t, p.Status, StatusAnalyzing)
 	})
 
-	t.Run("start analysis - invalid from analyzing", func(t *testing.T) {
+	t.Run("should return error when starting analysis from analyzing status", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusAnalyzing).Build()
 		assertError(t, p.StartAnalysis())
 	})
 
-	t.Run("approve - analyzing to approved", func(t *testing.T) {
+	t.Run("should transition from analyzing to approved", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusAnalyzing).Build()
 		assertNoError(t, p.Approve())
 		assertStatus(t, p.Status, StatusApproved)
 	})
 
-	t.Run("approve - invalid from pending", func(t *testing.T) {
+	t.Run("should return error when approving from pending status", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
 		assertError(t, p.Approve())
 	})
 
-	t.Run("reject - pending to rejected", func(t *testing.T) {
+	t.Run("should transition from pending to rejected", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
 		assertNoError(t, p.Reject())
 		assertStatus(t, p.Status, StatusRejected)
 	})
 
-	t.Run("reject - analyzing to rejected", func(t *testing.T) {
+	t.Run("should transition from analyzing to rejected", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusAnalyzing).Build()
 		assertNoError(t, p.Reject())
 		assertStatus(t, p.Status, StatusRejected)
 	})
 
-	t.Run("reject - invalid from approved", func(t *testing.T) {
+	t.Run("should return error when rejecting from approved status", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusApproved).Build()
 		assertError(t, p.Reject())
 	})
 }
 
 func TestProposalStatusQueries(t *testing.T) {
-	t.Run("IsPending", func(t *testing.T) {
+	t.Run("should return true for IsPending when status is pending", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
 		assertBool(t, p.IsPending(), "expected IsPending to return true")
 		assertBool(t, !p.IsAnalyzing() && !p.IsFinalized(), "expected IsAnalyzing and IsFinalized to return false")
 	})
 
-	t.Run("IsAnalyzing", func(t *testing.T) {
+	t.Run("should return true for IsAnalyzing when status is analyzing", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusAnalyzing).Build()
 		assertBool(t, p.IsAnalyzing(), "expected IsAnalyzing to return true")
 		assertBool(t, !p.IsPending() && !p.IsFinalized(), "expected IsPending and IsFinalized to return false")
 	})
 
-	t.Run("IsFinalized - approved", func(t *testing.T) {
+	t.Run("should return true for IsFinalized when status is approved", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusApproved).Build()
 		assertBool(t, p.IsFinalized(), "expected IsFinalized to return true for approved status")
 	})
 
-	t.Run("IsFinalized - rejected", func(t *testing.T) {
+	t.Run("should return true for IsFinalized when status is rejected", func(t *testing.T) {
 		p := NewProposalBuilder().WithStatus(StatusRejected).Build()
 		assertBool(t, p.IsFinalized(), "expected IsFinalized to return true for rejected status")
 	})
 }
 
 func TestProposalIsValid(t *testing.T) {
-	t.Run("valid proposal", func(t *testing.T) {
+	t.Run("should return true when proposal has all required fields", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
 		assertBool(t, p.IsValid(), "expected IsValid to return true for valid proposal")
 	})
 
-	t.Run("invalid - nil UUID", func(t *testing.T) {
+	t.Run("should return false when UUID is nil", func(t *testing.T) {
 		p := NewProposalBuilder().Build()
 		p.ID = uuid.Nil
 		assertBool(t, !p.IsValid(), "expected IsValid to return false for nil UUID")
 	})
 
-	t.Run("invalid - empty fields", func(t *testing.T) {
+	t.Run("should return false when required fields are empty", func(t *testing.T) {
 		tests := []struct {
 			name    string
 			builder *ProposalBuilder
@@ -274,7 +274,7 @@ func TestProposalIsValid(t *testing.T) {
 			{"empty CPF", NewProposalBuilder().WithCPF("")},
 			{"empty email", NewProposalBuilder().WithEmail("")},
 			{"empty phone", NewProposalBuilder().WithPhone("")},
-			{"zero birth date", NewProposalBuilder().WithBirthDate(time.Time{})},
+			{"empty birth date", NewProposalBuilder().WithBirthDate(time.Time{})},
 			{"empty address street", NewProposalBuilder().WithAddress(Address{City: "SP", State: "SP", ZipCode: "01234-567"})},
 			{"empty address city", NewProposalBuilder().WithAddress(Address{Street: "123 Main", State: "SP", ZipCode: "01234-567"})},
 			{"empty address state", NewProposalBuilder().WithAddress(Address{Street: "123 Main", City: "SP", ZipCode: "01234-567"})},
