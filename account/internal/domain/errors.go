@@ -16,3 +16,8 @@ var (
 	ErrOnlyAnalyzingCanBeApproved      = errors.New("only analyzing proposals can be approved")
 	ErrOnlyPendingOrAnalyzingCanReject = errors.New("only pending or analyzing proposals can be rejected")
 )
+
+// Domain repository errors
+var (
+	ErrProposalNotFound = errors.New("proposal not found")
+)
