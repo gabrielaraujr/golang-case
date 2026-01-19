@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS proposals (
     id UUID PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
     cpf VARCHAR(11) NOT NULL,
+    salary DECIMAL(10, 2) NOT NULL,
     birthdate DATE NOT NULL,
     email VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,

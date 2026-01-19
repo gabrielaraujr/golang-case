@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+
 set -e
 
-awslocal sqs create-queue --queue-name proposals >/dev/null
+printf "\n\nCreating SQS queues...\n"
+awslocal sqs create-queue --queue-name proposals
+awslocal sqs create-queue --queue-name risk-results
+printf "\n\nSQS queues created successfully!\n"
