@@ -10,5 +10,16 @@ Considere no escopo:
 
 Imagine que você irá apresentar sua proposta em uma banca de projetos e será avaliada por Arquitetura, Engenharia e Desenvolvimento.
 
-**Stack utilizadas**: 
-**Arquitetura proposta**: Microserviços, Cloud, OAuth, 12 Fatores
+**Stack utilizadas**:
+- Golang 1.25
+- PostgreSQL 18.1
+- Docker & Docker Compose
+- AWS SQS (LocalStack para desenvolvimento local)
+- Chi Router (HTTP)
+
+**Arquitetura proposta**:
+- Microserviços
+- Hexagonal
+- Clean
+- Cloud
+- 12 Fatores

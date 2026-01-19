@@ -9,6 +9,14 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./account/resources/db/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./account/resources/db/migrations:/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - platform
 
@@ -20,12 +28,20 @@ services:
       - "4566:4566"
     environment:
       SERVICES: sqs
+    volumes:
+      - ./account/resources/create-queues.sh:/etc/localstack/init/ready.d/create-queues.sh
+    healthcheck:
+      test: ["CMD", "awslocal", "sqs", "list-queues"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
     networks:
       - platform
 
   account:
     build:
       context: ./account
+      dockerfile: Dockerfile
     hostname: account
     container_name: account
     ports:
@@ -35,24 +51,24 @@ services:
     environment:
       PORT: 8001
     depends_on:
-      - postgresql
-      - localstack
+      postgresql:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
     networks:
       - platform
 
   risk-analysis:
     build:
       context: ./risk-analysis
+      dockerfile: Dockerfile
     hostname: risk-analysis
     container_name: risk-analysis
-    ports:
-      - "8002:8002"
     env_file:
       - .env
-    environment:
-      PORT: 8002
     depends_on:
-      - localstack
+      localstack:
+        condition: service_healthy
     networks:
       - platform
 
