@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	httpRouter "github.com/gabrielaraujr/golang-case/account/internal/adapters/http"
 	"github.com/gabrielaraujr/golang-case/account/internal/adapters/http/handler"
@@ -19,53 +18,54 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	log.Println("[Account] Starting...")
 
-	dbPool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+	// Database
+	dbPool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer dbPool.Close()
 
-	if err := dbPool.Ping(ctx); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
-
-	queueProducer, err := queue.NewSQSProducer(queue.SQSConfig{
-		QueueURL: os.Getenv("SQS_QUEUE_URL"),
+	// Dependencies
+	producer, _ := queue.NewSQSProducer(queue.SQSConfig{
+		QueueURL: os.Getenv("SQS_PROPOSALS_QUEUE_URL"),
 	})
-	if err != nil {
-		log.Fatalf("Failed to initialize SQS producer: %v", err)
-	}
+	repo := postgres.NewProposalRepository(dbPool)
+	logger := logger.NewSimpleLogger()
 
-	proposalRepo := postgres.NewProposalRepository(dbPool)
-	createUC := services.NewCreateProposalUseCase(proposalRepo, queueProducer, logger.NewSimpleLogger())
-	getUC := services.NewGetProposalUseCase(proposalRepo)
+	// Use Cases
+	createUC := services.NewCreateProposalUseCase(repo, producer, logger)
+	getUC := services.NewGetProposalUseCase(repo)
 
+	// Consumer
+	eventHandler := services.NewRiskAnalysisEventHandler(repo, logger)
+	consumer, _ := queue.NewSQSConsumer(queue.SQSConsumerConfig{
+		QueueURL:    os.Getenv("SQS_RISK_QUEUE_URL"),
+		MaxMessages: 10,
+	}, eventHandler)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_ = consumer.Start(ctx)
+	log.Println("[Account] Consumer started")
+
+	// HTTP Server
+	port := os.Getenv("PORT")
 	router := httpRouter.NewRouter(handler.NewProposalHandler(createUC, getUC))
-
-	server := &http.Server{
-		Addr:    ":" + os.Getenv("PORT"),
-		Handler: router,
-	}
-
 	go func() {
-		log.Printf("Server starting on port %s", os.Getenv("PORT"))
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("[Account] Server listening on :%s", port)
+		if err := http.ListenAndServe(":"+port, router); err != nil {
 			log.Fatalf("Server error: %v", err)
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	// Graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("server forced to shutdown: %v", err)
-	}
-
-	log.Printf("server exited")
+	log.Println("[Account] Shutting down...")
+	_ = consumer.Stop()
 }
