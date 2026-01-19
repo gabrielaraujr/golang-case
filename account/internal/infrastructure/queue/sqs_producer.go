@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -18,47 +16,28 @@ type SQSConfig struct {
 
 type SQSProducer struct {
 	queueURL string
-	client   *http.Client
 }
 
 func NewSQSProducer(cfg SQSConfig) (*SQSProducer, error) {
-	if cfg.QueueURL == "" {
-		return nil, fmt.Errorf("SQS_QUEUE_URL is required")
-	}
-
-	return &SQSProducer{
-		queueURL: cfg.QueueURL,
-		client:   &http.Client{},
-	}, nil
+	return &SQSProducer{queueURL: cfg.QueueURL}, nil
 }
 
 func (p *SQSProducer) Publish(ctx context.Context, event *ports.ProposalEvent) error {
-	body, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("marshal event: %w", err)
-	}
+	body, _ := json.Marshal(event)
 
 	form := url.Values{
 		"Action":      {"SendMessage"},
 		"MessageBody": {string(body)},
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.queueURL, bytes.NewBufferString(form.Encode()))
-	if err != nil {
-		return fmt.Errorf("create request: %w", err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, "POST", p.queueURL, bytes.NewBufferString(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := p.client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("send message: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("sqs error (status %d): %s", resp.StatusCode, string(respBody))
-	}
 
 	return nil
 }
