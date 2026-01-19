@@ -25,6 +25,7 @@ func (r *ProposalRepository) Save(ctx context.Context, proposal *entities.Propos
 			id,
 			full_name,
 			cpf,
+			salary,
 			email,
 			phone,
 			birthdate,
@@ -35,12 +36,13 @@ func (r *ProposalRepository) Save(ctx context.Context, proposal *entities.Propos
 			status,
 			created_at,
 			updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`
 
 	_, err := r.db.Exec(ctx, query,
 		proposal.ID,
 		proposal.FullName,
 		proposal.CPF,
+		proposal.Salary,
 		proposal.Email,
 		proposal.Phone,
 		proposal.BirthDate,
@@ -82,6 +84,7 @@ func (r *ProposalRepository) FindByID(ctx context.Context, id uuid.UUID) (*entit
 			id,
 			full_name,
 			cpf,
+			salary,
 			email,
 			phone,
 			birthdate,
@@ -105,6 +108,7 @@ func (r *ProposalRepository) FindByCPF(ctx context.Context, cpf string) (*entiti
 			id,
 			full_name,
 			cpf,
+			salary,
 			email,
 			phone,
 			birthdate,
@@ -130,6 +134,7 @@ func scanProposal(row pgx.Row) (*entities.Proposal, error) {
 		&proposal.ID,
 		&proposal.FullName,
 		&proposal.CPF,
+		&proposal.Salary,
 		&proposal.Email,
 		&proposal.Phone,
 		&proposal.BirthDate,
