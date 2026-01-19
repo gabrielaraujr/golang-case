@@ -27,6 +27,8 @@ services:
       - "4566:4566"
     environment:
       SERVICES: sqs
+    volumes:
+      - ./account/resources/create-queues.sh:/etc/localstack/init/ready.d/create-queues.sh
     networks:
       - platform
 
