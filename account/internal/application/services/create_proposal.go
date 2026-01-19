@@ -77,6 +77,14 @@ func (uc *CreateProposalUseCase) Execute(
 			"full_name": proposal.FullName,
 			"cpf":       proposal.CPF,
 			"email":     proposal.Email,
+			"phone":     proposal.Phone,
+			"birthdate": proposal.BirthDate.Format(DateLayoutBR),
+			"address": map[string]string{
+				"street":   proposal.Address.Street,
+				"city":     proposal.Address.City,
+				"state":    proposal.Address.State,
+				"zip_code": proposal.Address.ZipCode,
+			},
 		},
 	}
 	_ = uc.producer.Publish(ctx, event) // Fire and forget
