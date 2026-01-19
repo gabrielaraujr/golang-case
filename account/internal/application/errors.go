@@ -46,3 +46,11 @@ func NewInternalError(message string, err error) *ApplicationError {
 		Err:        err,
 	}
 }
+
+func NewNotFoundError(resource string) *ApplicationError {
+	return &ApplicationError{
+		Code:       "NOT_FOUND",
+		Message:    fmt.Sprintf("%s not found", resource),
+		StatusCode: 404,
+	}
+}
