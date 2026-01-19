@@ -49,7 +49,7 @@ func TestProposalHandler_Create(t *testing.T) {
 			"cpf": "12345678901",
 			"email": "john@example.com",
 			"phone": "11999999999",
-			"birth_date": "15-01-1990",
+			"birthdate": "15-01-1990",
 			"address": {
 				"street": "123 Main St",
 				"city": "São Paulo",
@@ -114,7 +114,7 @@ func TestProposalHandler_Create(t *testing.T) {
 		getUseCase := &mockGetProposalUseCase{}
 		handler := NewProposalHandler(createUseCase, getUseCase)
 
-		reqBody := `{"full_name":"","cpf":"12345678901","email":"j@e.com","phone":"11999999999","birth_date":"15-01-1990","address":{}}`
+		reqBody := `{"full_name":"","cpf":"12345678901","email":"j@e.com","phone":"11999999999","birthdate":"15-01-1990","address":{}}`
 		req := httptest.NewRequest(http.MethodPost, "/proposals", bytes.NewBufferString(reqBody))
 		rec := httptest.NewRecorder()
 
@@ -134,7 +134,7 @@ func TestProposalHandler_Create(t *testing.T) {
 		getUseCase := &mockGetProposalUseCase{}
 		handler := NewProposalHandler(createUseCase, getUseCase)
 
-		reqBody := `{"full_name":"John","cpf":"12345678901","email":"j@e.com","phone":"11999999999","birth_date":"15-01-1990","address":{}}`
+		reqBody := `{"full_name":"John","cpf":"12345678901","email":"j@e.com","phone":"11999999999","birthdate":"15-01-1990","address":{}}`
 		req := httptest.NewRequest(http.MethodPost, "/proposals", bytes.NewBufferString(reqBody))
 		rec := httptest.NewRecorder()
 
@@ -161,7 +161,7 @@ func TestProposalHandler_Create(t *testing.T) {
 		getUseCase := &mockGetProposalUseCase{}
 		handler := NewProposalHandler(createUseCase, getUseCase)
 
-		reqBody := `{"full_name":"John","cpf":"12345678901","email":"j@e.com","phone":"11999999999","birth_date":"15-01-1990","address":{}}`
+		reqBody := `{"full_name":"John","cpf":"12345678901","email":"j@e.com","phone":"11999999999","birthdate":"15-01-1990","address":{}}`
 		req := httptest.NewRequest(http.MethodPost, "/proposals", bytes.NewBufferString(reqBody))
 		rec := httptest.NewRecorder()
 
