@@ -76,6 +76,7 @@ func (m *mockLogger) Warn(ctx context.Context, msg string, args ...interface{}) 
 type requestBuilder struct {
 	fullName  string
 	cpf       string
+	salary    float64
 	email     string
 	phone     string
 	birthDate string
@@ -86,6 +87,7 @@ func newRequestBuilder() *requestBuilder {
 	return &requestBuilder{
 		fullName:  "John Doe",
 		cpf:       "12345678901",
+		salary:    5000.00,
 		email:     "john@example.com",
 		phone:     "11999999999",
 		birthDate: "15-01-1990",
@@ -112,6 +114,7 @@ func (b *requestBuilder) build() *dto.CreateProposalRequest {
 	return &dto.CreateProposalRequest{
 		FullName:  b.fullName,
 		CPF:       b.cpf,
+		Salary:    b.salary,
 		Email:     b.email,
 		Phone:     b.phone,
 		BirthDate: b.birthDate,

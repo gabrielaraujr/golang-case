@@ -20,6 +20,7 @@ type Proposal struct {
 	ID        uuid.UUID
 	FullName  string
 	CPF       string
+	Salary    float64
 	BirthDate time.Time
 	Email     string
 	Phone     string
@@ -36,12 +37,15 @@ type Address struct {
 	ZipCode string
 }
 
-func NewProposal(fullName, cpf, email, phone string, birthDate time.Time, address Address) (*Proposal, error) {
+func NewProposal(fullName, cpf string, salary float64, email, phone string, birthDate time.Time, address Address) (*Proposal, error) {
 	if fullName == "" {
 		return nil, errors.ErrFullNameRequired
 	}
 	if cpf == "" {
 		return nil, errors.ErrCPFRequired
+	}
+	if salary <= 0 {
+		return nil, errors.ErrSalaryRequired
 	}
 	if email == "" {
 		return nil, errors.ErrEmailRequired
@@ -54,6 +58,7 @@ func NewProposal(fullName, cpf, email, phone string, birthDate time.Time, addres
 		ID:        uuid.New(),
 		FullName:  fullName,
 		CPF:       cpf,
+		Salary:    salary,
 		Email:     email,
 		Phone:     phone,
 		BirthDate: birthDate,
@@ -107,6 +112,7 @@ func (p *Proposal) IsValid() bool {
 	return p.ID != uuid.Nil &&
 		p.FullName != "" &&
 		p.CPF != "" &&
+		p.Salary != 0 &&
 		p.Email != "" &&
 		p.Phone != "" &&
 		!p.BirthDate.IsZero() &&

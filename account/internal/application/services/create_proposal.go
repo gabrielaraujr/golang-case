@@ -51,6 +51,7 @@ func (uc *CreateProposalUseCase) Execute(
 	proposal, err := entities.NewProposal(
 		req.FullName,
 		req.CPF,
+		req.Salary,
 		req.Email,
 		req.Phone,
 		birthDate,
@@ -76,15 +77,7 @@ func (uc *CreateProposalUseCase) Execute(
 		Payload: map[string]interface{}{
 			"full_name": proposal.FullName,
 			"cpf":       proposal.CPF,
-			"email":     proposal.Email,
-			"phone":     proposal.Phone,
-			"birthdate": proposal.BirthDate.Format(DateLayoutBR),
-			"address": map[string]string{
-				"street":   proposal.Address.Street,
-				"city":     proposal.Address.City,
-				"state":    proposal.Address.State,
-				"zip_code": proposal.Address.ZipCode,
-			},
+			"salary":    proposal.Salary,
 		},
 	}
 	_ = uc.producer.Publish(ctx, event) // Fire and forget
@@ -98,6 +91,7 @@ func entityToResponse(p *entities.Proposal) *dto.ProposalResponse {
 		ID:        p.ID,
 		FullName:  p.FullName,
 		CPF:       p.CPF,
+		Salary:    p.Salary,
 		Email:     p.Email,
 		Phone:     p.Phone,
 		BirthDate: p.BirthDate,

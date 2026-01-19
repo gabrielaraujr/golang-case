@@ -16,6 +16,7 @@ type AddressRequest struct {
 type CreateProposalRequest struct {
 	FullName  string         `json:"full_name"`
 	CPF       string         `json:"cpf"`
+	Salary    float64        `json:"salary"`
 	Email     string         `json:"email"`
 	Phone     string         `json:"phone"`
 	BirthDate string         `json:"birthdate"`
@@ -26,6 +27,7 @@ type ProposalResponse struct {
 	ID        uuid.UUID       `json:"id"`
 	FullName  string          `json:"full_name"`
 	CPF       string          `json:"cpf"`
+	Salary    float64         `json:"salary"`
 	Email     string          `json:"email"`
 	Phone     string          `json:"phone"`
 	BirthDate time.Time       `json:"birthdate"`

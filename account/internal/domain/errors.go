@@ -6,6 +6,7 @@ import "errors"
 var (
 	ErrFullNameRequired  = errors.New("full name is required")
 	ErrCPFRequired       = errors.New("CPF is required")
+	ErrSalaryRequired    = errors.New("salary is required")
 	ErrEmailRequired     = errors.New("email is required")
 	ErrBirthDateRequired = errors.New("birth date is required")
 )

@@ -12,6 +12,7 @@ import (
 type ProposalBuilder struct {
 	fullName  string
 	cpf       string
+	salary    float64
 	email     string
 	phone     string
 	birthDate time.Time
@@ -23,6 +24,7 @@ func NewProposalBuilder() *ProposalBuilder {
 	return &ProposalBuilder{
 		fullName:  "John Doe",
 		cpf:       "12345678901",
+		salary:    5000.00,
 		email:     "john@example.com",
 		phone:     "11999999999",
 		birthDate: time.Date(1990, 1, 15, 0, 0, 0, 0, time.UTC),
@@ -43,6 +45,11 @@ func (b *ProposalBuilder) WithFullName(name string) *ProposalBuilder {
 
 func (b *ProposalBuilder) WithCPF(cpf string) *ProposalBuilder {
 	b.cpf = cpf
+	return b
+}
+
+func (b *ProposalBuilder) WithSalary(salary float64) *ProposalBuilder {
+	b.salary = salary
 	return b
 }
 
@@ -76,6 +83,7 @@ func (b *ProposalBuilder) Build() *Proposal {
 		ID:        uuid.New(),
 		FullName:  b.fullName,
 		CPF:       b.cpf,
+		Salary:    b.salary,
 		Email:     b.email,
 		Phone:     b.phone,
 		BirthDate: b.birthDate,
@@ -87,7 +95,7 @@ func (b *ProposalBuilder) Build() *Proposal {
 }
 
 func (b *ProposalBuilder) BuildWithValidation() (*Proposal, error) {
-	return NewProposal(b.fullName, b.cpf, b.email, b.phone, b.birthDate, b.address)
+	return NewProposal(b.fullName, b.cpf, b.salary, b.email, b.phone, b.birthDate, b.address)
 }
 
 func assertNoError(t *testing.T, err error) {
@@ -148,6 +156,12 @@ func TestNewProposal(t *testing.T) {
 			builder:     NewProposalBuilder().WithCPF(""),
 			wantErr:     true,
 			expectedErr: domainErrors.ErrCPFRequired,
+		},
+		{
+			name:        "should return error when salary is zero",
+			builder:     NewProposalBuilder().WithSalary(0),
+			wantErr:     true,
+			expectedErr: domainErrors.ErrSalaryRequired,
 		},
 		{
 			name:        "should return error when email is empty",
@@ -298,6 +312,7 @@ func TestProposalIsValid(t *testing.T) {
 		}{
 			{"empty full name", NewProposalBuilder().WithFullName("")},
 			{"empty CPF", NewProposalBuilder().WithCPF("")},
+			{"empty salary", NewProposalBuilder().WithSalary(0)},
 			{"empty email", NewProposalBuilder().WithEmail("")},
 			{"empty phone", NewProposalBuilder().WithPhone("")},
 			{"empty birth date", NewProposalBuilder().WithBirthDate(time.Time{})},
