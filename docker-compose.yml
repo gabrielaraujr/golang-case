@@ -9,6 +9,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./account/resources:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - platform
 
@@ -26,6 +33,7 @@ services:
   account:
     build:
       context: ./account
+      dockerfile: Dockerfile
     hostname: account
     container_name: account
     ports:
@@ -35,14 +43,17 @@ services:
     environment:
       PORT: 8001
     depends_on:
-      - postgresql
-      - localstack
+      postgresql:
+        condition: service_healthy
+      localstack:
+        condition: service_started
     networks:
       - platform
 
   risk-analysis:
     build:
       context: ./risk-analysis
+      dockerfile: Dockerfile
     hostname: risk-analysis
     container_name: risk-analysis
     ports:
