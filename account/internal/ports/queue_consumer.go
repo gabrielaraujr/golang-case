@@ -21,14 +21,3 @@ type RiskAnalysisEvent struct {
 type EventHandler interface {
 	Handle(ctx context.Context, event *RiskAnalysisEvent) error
 }
-
-type QueueMessage struct {
-	ID         string
-	Body       string
-	Attributes map[string]string
-}
-
-type QueueConsumer interface {
-	Start(ctx context.Context, handler func(context.Context, *QueueMessage) error) error
-	Close() error
-}
