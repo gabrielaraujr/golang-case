@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log"
 
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/ports"
@@ -11,34 +10,36 @@ import (
 
 type AnalyzeProposalService struct {
 	producer ports.QueueProducer
+	logger   ports.Logger
 }
 
-func NewAnalyzeProposalService(producer ports.QueueProducer) *AnalyzeProposalService {
+func NewAnalyzeProposalService(producer ports.QueueProducer, logger ports.Logger) *AnalyzeProposalService {
 	return &AnalyzeProposalService{
 		producer: producer,
+		logger:   logger,
 	}
 }
 
 func (s *AnalyzeProposalService) Handle(ctx context.Context, event *domain.ProposalCreatedEvent) error {
-	log.Printf("[RiskAnalysis] Processing proposal %s", event.ProposalID)
-
-	if err := event.Validate(); err != nil {
-		log.Printf("[RiskAnalysis] Invalid payload for proposal %s: %v", event.ProposalID, err)
-		return err
-	}
-
 	payload := event.Payload
 	proposalID := event.ProposalID
+
+	s.logger.Info(ctx, "[RiskAnalysis] Processing proposal", "proposal_id", proposalID)
+
+	if err := event.Validate(); err != nil {
+		s.logger.Error(ctx, "[RiskAnalysis] Invalid payload", "proposal_id", proposalID, "error", err)
+		return err
+	}
 
 	// Document analysis
 	documentResult := domain.AnalyzeDocuments(payload)
 	documentApproved := documentResult.Approved
 	if !documentApproved {
-		log.Printf("[RiskAnalysis] Documents rejected for proposal %s: %s", proposalID, documentResult.Reason)
+		s.logger.Warn(ctx, "[RiskAnalysis] Documents rejected", "proposal_id", proposalID, "reason", documentResult.Reason)
 		return s.publish(ctx, domain.EventDocumentsRejected, proposalID, documentApproved)
 	}
 
-	log.Printf("[RiskAnalysis] Documents approved for proposal %s", proposalID)
+	s.logger.Info(ctx, "[RiskAnalysis] Documents approved", "proposal_id", proposalID)
 	if err := s.publish(ctx, domain.EventDocumentsApproved, proposalID, documentApproved); err != nil {
 		return err
 	}
@@ -46,19 +47,19 @@ func (s *AnalyzeProposalService) Handle(ctx context.Context, event *domain.Propo
 	// Credit analysis
 	creditResult := domain.AnalyzeCredit(payload)
 	if !creditResult.Approved {
-		log.Printf("[RiskAnalysis] Credit rejected for proposal %s: %s", proposalID, creditResult.Reason)
+		s.logger.Warn(ctx, "[RiskAnalysis] Credit rejected", "proposal_id", proposalID, "reason", creditResult.Reason)
 		return s.publish(ctx, domain.EventCreditRejected, proposalID, creditResult.Approved)
 	}
 
 	// Fraud analysis
 	fraudResult := domain.AnalyzeFraud(payload)
 	if !fraudResult.Approved {
-		log.Printf("[RiskAnalysis] Fraud rejected for proposal %s: %s", proposalID, fraudResult.Reason)
+		s.logger.Warn(ctx, "[RiskAnalysis] Fraud rejected", "proposal_id", proposalID, "reason", fraudResult.Reason)
 		return s.publish(ctx, domain.EventFraudRejected, proposalID, fraudResult.Approved)
 	}
 
 	// All analyses passed
-	log.Printf("[RiskAnalysis] Proposal %s fully approved", proposalID)
+	s.logger.Info(ctx, "[RiskAnalysis] Proposal fully approved", "proposal_id", proposalID)
 	return s.publish(ctx, domain.EventRiskAnalysisCompleted, proposalID, true)
 }
 

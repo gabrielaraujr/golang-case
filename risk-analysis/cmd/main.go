@@ -8,11 +8,15 @@ import (
 	"syscall"
 
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/application/services"
+	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/infrastructure/logger"
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/infrastructure/queue"
 )
 
 func main() {
 	log.Println("[RiskAnalysis] Starting...")
+
+	// Logger
+	appLogger := logger.NewSimpleLogger()
 
 	// Producer
 	producer, _ := queue.NewSQSProducer(queue.SQSConfig{
@@ -20,13 +24,13 @@ func main() {
 	})
 
 	// Service
-	analyzeService := services.NewAnalyzeProposalService(producer)
+	analyzeService := services.NewAnalyzeProposalService(producer, appLogger)
 
 	// Consumer
 	consumer, _ := queue.NewSQSConsumer(queue.SQSConsumerConfig{
 		QueueURL:    os.Getenv("SQS_PROPOSALS_QUEUE_URL"),
 		MaxMessages: 10,
-	}, analyzeService)
+	}, analyzeService, appLogger)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

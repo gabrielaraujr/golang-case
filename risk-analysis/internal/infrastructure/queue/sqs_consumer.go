@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -28,18 +27,22 @@ type SQSConsumer struct {
 	maxMessages     int
 	client          *http.Client
 	handler         ports.EventHandler
+	logger          ports.Logger
 	stopCh          chan struct{}
 	wg              sync.WaitGroup
 	running         bool
 	mu              sync.Mutex
 }
 
-func NewSQSConsumer(cfg SQSConsumerConfig, handler ports.EventHandler) (*SQSConsumer, error) {
+func NewSQSConsumer(cfg SQSConsumerConfig, handler ports.EventHandler, logger ports.Logger) (*SQSConsumer, error) {
 	if cfg.QueueURL == "" {
 		return nil, fmt.Errorf("SQS_PROPOSALS_QUEUE_URL is required")
 	}
 	if handler == nil {
 		return nil, fmt.Errorf("event handler is required")
+	}
+	if logger == nil {
+		return nil, fmt.Errorf("logger is required")
 	}
 
 	pollingInterval := cfg.PollingInterval
@@ -58,6 +61,7 @@ func NewSQSConsumer(cfg SQSConsumerConfig, handler ports.EventHandler) (*SQSCons
 		maxMessages:     maxMessages,
 		client:          &http.Client{Timeout: 30 * time.Second},
 		handler:         handler,
+		logger:          logger,
 		stopCh:          make(chan struct{}),
 	}, nil
 }
@@ -71,7 +75,7 @@ func (c *SQSConsumer) Start(ctx context.Context) error {
 	c.running = true
 	c.mu.Unlock()
 
-	log.Printf("[SQSConsumer] Starting consumer for queue: %s", c.queueURL)
+	c.logger.Info(ctx, "[SQSConsumer] Starting consumer for queue", "queue_url", c.queueURL)
 
 	c.wg.Add(1)
 	go c.pollMessages(ctx)
@@ -91,7 +95,7 @@ func (c *SQSConsumer) Stop() error {
 	close(c.stopCh)
 	c.wg.Wait()
 
-	log.Printf("[SQSConsumer] Consumer stopped")
+	c.logger.Info(context.Background(), "[SQSConsumer] Consumer stopped")
 	return nil
 }
 
@@ -107,10 +111,10 @@ func (c *SQSConsumer) pollMessages(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("[SQSConsumer] Context cancelled, stopping")
+			c.logger.Info(ctx, "[SQSConsumer] Context cancelled, stopping consumer")
 			return
 		case <-c.stopCh:
-			log.Printf("[SQSConsumer] Stop signal received")
+			c.logger.Info(ctx, "[SQSConsumer] Stop signal received")
 			return
 		case <-ticker.C:
 			c.receiveAndProcess(ctx)
@@ -121,18 +125,18 @@ func (c *SQSConsumer) pollMessages(ctx context.Context) {
 func (c *SQSConsumer) receiveAndProcess(ctx context.Context) {
 	messages, err := c.receiveMessages(ctx)
 	if err != nil {
-		log.Printf("[SQSConsumer] Error receiving messages: %v", err)
+		c.logger.Error(ctx, "[SQSConsumer] Error receiving messages", "error", err)
 		return
 	}
 
 	for _, msg := range messages {
 		if err := c.processMessage(ctx, msg); err != nil {
-			log.Printf("[SQSConsumer] Error processing message: %v", err)
+			c.logger.Error(ctx, "[SQSConsumer] Error processing message", "message_id", msg.MessageId, "error", err)
 			continue
 		}
 
 		if err := c.deleteMessage(ctx, msg.ReceiptHandle); err != nil {
-			log.Printf("[SQSConsumer] Error deleting message: %v", err)
+			c.logger.Error(ctx, "[SQSConsumer] Error deleting message", "message_id", msg.MessageId, "error", err)
 		}
 	}
 }
@@ -188,7 +192,7 @@ func (c *SQSConsumer) receiveMessages(ctx context.Context) ([]sqsMessage, error)
 }
 
 func (c *SQSConsumer) processMessage(ctx context.Context, msg sqsMessage) error {
-	log.Printf("[SQSConsumer] Processing message: %s", msg.MessageId)
+	c.logger.Info(ctx, "processing message", "message_id", msg.MessageId)
 
 	var event events.ProposalCreatedEvent
 	if err := json.Unmarshal([]byte(msg.Body), &event); err != nil {
@@ -221,6 +225,6 @@ func (c *SQSConsumer) deleteMessage(ctx context.Context, receiptHandle string) e
 		return fmt.Errorf("sqs error (status %d): %s", resp.StatusCode, string(body))
 	}
 
-	log.Printf("[SQSConsumer] Message deleted successfully")
+	c.logger.Info(ctx, "message deleted successfully", "receipt_handle", receiptHandle)
 	return nil
 }

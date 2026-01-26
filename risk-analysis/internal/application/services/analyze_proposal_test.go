@@ -27,6 +27,28 @@ func (m *mockQueueProducer) Publish(ctx context.Context, event *events.ProposalS
 	return nil
 }
 
+type mockLogger struct {
+	infoCalls  int
+	errorCalls int
+	warnCalls  int
+}
+
+func newMockLogger() *mockLogger {
+	return &mockLogger{}
+}
+
+func (m *mockLogger) Info(ctx context.Context, msg string, args ...any) {
+	m.infoCalls++
+}
+
+func (m *mockLogger) Error(ctx context.Context, msg string, args ...any) {
+	m.errorCalls++
+}
+
+func (m *mockLogger) Warn(ctx context.Context, msg string, args ...any) {
+	m.warnCalls++
+}
+
 func assertEventCount(t *testing.T, events []*events.ProposalStatusChangedEvent, expected int) {
 	t.Helper()
 	if len(events) != expected {
@@ -93,8 +115,9 @@ func TestAnalyzeProposalServiceHandle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := newMockQueueProducer()
-			service := NewAnalyzeProposalService(mock)
+			queueProducer := newMockQueueProducer()
+			logger := newMockLogger()
+			service := NewAnalyzeProposalService(queueProducer, logger)
 			ctx := context.Background()
 			proposalID := uuid.New()
 
@@ -106,9 +129,9 @@ func TestAnalyzeProposalServiceHandle(t *testing.T) {
 
 			_ = service.Handle(ctx, event)
 
-			assertEventCount(t, mock.published, tt.wantEvents)
+			assertEventCount(t, queueProducer.published, tt.wantEvents)
 			for i := 0; i < tt.wantEvents; i++ {
-				assertEvent(t, mock.published[i], tt.wantEventTypes[i], tt.wantApproved[i], proposalID)
+				assertEvent(t, queueProducer.published[i], tt.wantEventTypes[i], tt.wantApproved[i], proposalID)
 			}
 		})
 	}
@@ -156,8 +179,9 @@ func TestAnalyzeProposalServiceHandleValidationErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := newMockQueueProducer()
-			service := NewAnalyzeProposalService(mock)
+			queueProducer := newMockQueueProducer()
+			logger := newMockLogger()
+			service := NewAnalyzeProposalService(queueProducer, logger)
 			ctx := context.Background()
 
 			event := &events.ProposalCreatedEvent{
@@ -170,7 +194,7 @@ func TestAnalyzeProposalServiceHandleValidationErrors(t *testing.T) {
 			if err != tt.wantErr {
 				t.Errorf("Handle() error = %v, want %v", err, tt.wantErr)
 			}
-			assertEventCount(t, mock.published, 0)
+			assertEventCount(t, queueProducer.published, 0)
 		})
 	}
 }
