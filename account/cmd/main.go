@@ -39,7 +39,7 @@ func main() {
 	getUC := services.NewGetProposalUseCase(repo)
 
 	// Consumer
-	eventHandler := services.NewRiskAnalysisEventHandler(repo, logger)
+	eventHandler := services.NewProposalStatusChangedEventHandler(repo, logger)
 	consumer, _ := queue.NewSQSConsumer(queue.SQSConsumerConfig{
 		QueueURL:    os.Getenv("SQS_RISK_QUEUE_URL"),
 		MaxMessages: 10,

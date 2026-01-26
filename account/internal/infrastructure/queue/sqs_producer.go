@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/gabrielaraujr/golang-case/account/internal/ports"
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 )
 
 type SQSConfig struct {
@@ -22,7 +22,7 @@ func NewSQSProducer(cfg SQSConfig) (*SQSProducer, error) {
 	return &SQSProducer{queueURL: cfg.QueueURL}, nil
 }
 
-func (p *SQSProducer) Publish(ctx context.Context, event *ports.ProposalEvent) error {
+func (p *SQSProducer) Publish(ctx context.Context, event *events.ProposalCreatedEvent) error {
 	body, _ := json.Marshal(event)
 
 	form := url.Values{

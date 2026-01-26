@@ -3,44 +3,44 @@ package services
 import (
 	"context"
 
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/gabrielaraujr/golang-case/account/internal/domain/entities"
 	"github.com/gabrielaraujr/golang-case/account/internal/ports"
-	"github.com/google/uuid"
 )
 
-type RiskAnalysisEventHandler struct {
+type ProposalStatusChangedEventHandler struct {
 	repository ports.ProposalRepository
 	logger     ports.Logger
 }
 
-func NewRiskAnalysisEventHandler(repo ports.ProposalRepository, logger ports.Logger) *RiskAnalysisEventHandler {
-	return &RiskAnalysisEventHandler{
+func NewProposalStatusChangedEventHandler(
+	repo ports.ProposalRepository,
+	logger ports.Logger,
+) *ProposalStatusChangedEventHandler {
+	return &ProposalStatusChangedEventHandler{
 		repository: repo,
 		logger:     logger,
 	}
 }
 
-func (h *RiskAnalysisEventHandler) Handle(ctx context.Context, event *ports.RiskAnalysisEvent) error {
+func (h *ProposalStatusChangedEventHandler) Handle(
+	ctx context.Context,
+	event *events.ProposalStatusChangedEvent,
+) error {
 	h.logger.Info(ctx, "processing risk analysis event", "event_type", event.EventType, "proposal_id", event.ProposalID)
 
-	proposalID, err := uuid.Parse(event.ProposalID)
-	if err != nil {
-		h.logger.Error(ctx, "invalid proposal ID", "error", err)
-		return err
-	}
-
-	proposal, err := h.repository.FindByID(ctx, proposalID)
+	proposal, err := h.repository.FindByID(ctx, event.ProposalID)
 	if err != nil {
 		h.logger.Error(ctx, "proposal not found", "proposal_id", event.ProposalID, "error", err)
 		return err
 	}
 
 	switch event.EventType {
-	case ports.EventDocumentsApproved:
+	case events.EventDocumentsApproved:
 		return h.handleAnalyzing(ctx, proposal)
-	case ports.EventDocumentsRejected, ports.EventCreditRejected, ports.EventFraudRejected:
+	case events.EventDocumentsRejected, events.EventCreditRejected, events.EventFraudRejected:
 		return h.handleRejection(ctx, proposal)
-	case ports.EventRiskAnalysisCompleted:
+	case events.EventRiskAnalysisCompleted:
 		return h.handleCompletion(ctx, proposal, event)
 	default:
 		h.logger.Info(ctx, "intermediate event received", "event_type", event.EventType)
@@ -48,7 +48,7 @@ func (h *RiskAnalysisEventHandler) Handle(ctx context.Context, event *ports.Risk
 	}
 }
 
-func (h *RiskAnalysisEventHandler) handleAnalyzing(ctx context.Context, proposal *entities.Proposal) error {
+func (h *ProposalStatusChangedEventHandler) handleAnalyzing(ctx context.Context, proposal *entities.Proposal) error {
 	if !proposal.IsPending() {
 		return nil
 	}
@@ -67,7 +67,7 @@ func (h *RiskAnalysisEventHandler) handleAnalyzing(ctx context.Context, proposal
 	return nil
 }
 
-func (h *RiskAnalysisEventHandler) handleRejection(ctx context.Context, proposal *entities.Proposal) error {
+func (h *ProposalStatusChangedEventHandler) handleRejection(ctx context.Context, proposal *entities.Proposal) error {
 	if err := proposal.Reject(); err != nil {
 		h.logger.Error(ctx, "failed to reject proposal", "error", err)
 		return err
@@ -82,7 +82,11 @@ func (h *RiskAnalysisEventHandler) handleRejection(ctx context.Context, proposal
 	return nil
 }
 
-func (h *RiskAnalysisEventHandler) handleCompletion(ctx context.Context, proposal *entities.Proposal, event *ports.RiskAnalysisEvent) error {
+func (h *ProposalStatusChangedEventHandler) handleCompletion(
+	ctx context.Context,
+	proposal *entities.Proposal,
+	event *events.ProposalStatusChangedEvent,
+) error {
 	if !event.Approved {
 		return h.handleRejection(ctx, proposal)
 	}

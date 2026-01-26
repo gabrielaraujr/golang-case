@@ -7,8 +7,8 @@ import (
 
 	appErrors "github.com/gabrielaraujr/golang-case/account/internal/application"
 	"github.com/gabrielaraujr/golang-case/account/internal/application/dto"
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/gabrielaraujr/golang-case/account/internal/domain/entities"
-	"github.com/gabrielaraujr/golang-case/account/internal/ports"
 	"github.com/google/uuid"
 )
 
@@ -44,10 +44,10 @@ func (m *mockRepository) Update(ctx context.Context, p *entities.Proposal) error
 }
 
 type mockQueueProducer struct {
-	publishFn func(ctx context.Context, event *ports.ProposalEvent) error
+	publishFn func(ctx context.Context, event *events.ProposalCreatedEvent) error
 }
 
-func (m *mockQueueProducer) Publish(ctx context.Context, event *ports.ProposalEvent) error {
+func (m *mockQueueProducer) Publish(ctx context.Context, event *events.ProposalCreatedEvent) error {
 	if m.publishFn != nil {
 		return m.publishFn(ctx, event)
 	}
