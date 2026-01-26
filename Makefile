@@ -6,8 +6,15 @@ configure:
 logs:
 	docker compose logs -f
 
-test:
+tests:
 	cd account && go test ./...
+	cd risk-analysis && go test ./...
+
+test-account:
+	cd account && go test ./...
+
+test-risk-analysis:
+	cd risk-analysis && go test ./...
 
 clean:
 	docker compose down -v

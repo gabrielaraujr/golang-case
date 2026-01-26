@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	appErrors "github.com/gabrielaraujr/golang-case/account/internal/application"
+	errors "github.com/gabrielaraujr/golang-case/account/internal/application"
 	"github.com/gabrielaraujr/golang-case/account/internal/application/dto"
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/gabrielaraujr/golang-case/account/internal/domain/entities"
 	"github.com/gabrielaraujr/golang-case/account/internal/ports"
 )
@@ -38,7 +39,7 @@ func (uc *CreateProposalUseCase) Execute(
 
 	birthDate, err := time.Parse(DateLayoutBR, req.BirthDate)
 	if err != nil {
-		return nil, appErrors.NewInvalidInputError(err)
+		return nil, errors.NewInvalidInputError(err)
 	}
 
 	address := entities.Address{
@@ -58,31 +59,31 @@ func (uc *CreateProposalUseCase) Execute(
 		address,
 	)
 	if err != nil {
-		return nil, appErrors.NewInvalidInputError(err)
+		return nil, errors.NewInvalidInputError(err)
 	}
 
 	existing, _ := uc.repository.FindByCPF(ctx, req.CPF)
 	if existing != nil {
-		return nil, appErrors.NewDuplicateCPFError()
+		return nil, errors.NewDuplicateCPFError()
 	}
 
 	if err := uc.repository.Save(ctx, proposal); err != nil {
 		uc.logger.Error(ctx, "failed to save proposal", "error", err)
-		return nil, appErrors.NewInternalError("failed to save proposal", err)
+		return nil, errors.NewInternalError("failed to save proposal", err)
 	}
 
-	event := &ports.ProposalEvent{
-		EventType:  "ProposalCreated",
-		ProposalID: proposal.ID.String(),
-		Payload: map[string]interface{}{
-			"full_name": proposal.FullName,
-			"cpf":       proposal.CPF,
-			"salary":    proposal.Salary,
+	event := &events.ProposalCreatedEvent{
+		EventType:  events.EventProposalCreated,
+		ProposalID: proposal.ID,
+		Payload: &events.ProposalPayload{
+			FullName: proposal.FullName,
+			CPF:      proposal.CPF,
+			Salary:   proposal.Salary,
 		},
 	}
 	_ = uc.producer.Publish(ctx, event) // Fire and forget
 
-	uc.logger.Info(ctx, "proposal created", "proposal_id", proposal.ID.String())
+	uc.logger.Info(ctx, "proposal created", "proposal_id", proposal.ID)
 	return entityToResponse(proposal), nil
 }
 

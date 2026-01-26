@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o account ./cmd
+RUN go mod tidy && go build -o account ./cmd
 
 EXPOSE 8001
 
-CMD ["./account"]
+CMD ["/app/account"]

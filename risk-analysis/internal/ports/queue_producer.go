@@ -3,9 +3,9 @@ package ports
 import (
 	"context"
 
-	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/events"
+	events "github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 )
 
 type QueueProducer interface {
-	Publish(ctx context.Context, event *events.RiskEvent) error
+	Publish(ctx context.Context, event *events.ProposalStatusChangedEvent) error
 }

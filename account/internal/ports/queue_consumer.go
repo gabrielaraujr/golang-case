@@ -1,34 +1,11 @@
 package ports
 
-import "context"
+import (
+	"context"
 
-const (
-	EventDocumentsApproved     = "DocumentsApproved"
-	EventDocumentsRejected     = "DocumentsRejected"
-	EventCreditApproved        = "CreditApproved"
-	EventCreditRejected        = "CreditRejected"
-	EventFraudApproved         = "FraudApproved"
-	EventFraudRejected         = "FraudRejected"
-	EventRiskAnalysisCompleted = "RiskAnalysisCompleted"
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 )
 
-type RiskAnalysisEvent struct {
-	EventType  string `json:"event_type"`
-	ProposalID string `json:"proposal_id"`
-	Approved   bool   `json:"approved"`
-}
-
 type EventHandler interface {
-	Handle(ctx context.Context, event *RiskAnalysisEvent) error
-}
-
-type QueueMessage struct {
-	ID         string
-	Body       string
-	Attributes map[string]string
-}
-
-type QueueConsumer interface {
-	Start(ctx context.Context, handler func(context.Context, *QueueMessage) error) error
-	Close() error
+	Handle(ctx context.Context, event *events.ProposalStatusChangedEvent) error
 }

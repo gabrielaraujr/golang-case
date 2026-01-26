@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/gabrielaraujr/golang-case/account/internal/ports"
 )
 
@@ -67,7 +68,7 @@ func (c *SQSConsumer) poll(ctx context.Context) {
 func (c *SQSConsumer) processMessages(ctx context.Context) {
 	messages := c.receive(ctx)
 	for _, msg := range messages {
-		var event ports.RiskAnalysisEvent
+		var event events.ProposalStatusChangedEvent
 		if err := json.Unmarshal([]byte(msg.Body), &event); err != nil {
 			log.Printf("[SQSConsumer] Error parsing message: %v", err)
 			continue

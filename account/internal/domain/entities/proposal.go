@@ -37,7 +37,15 @@ type Address struct {
 	ZipCode string
 }
 
-func NewProposal(fullName, cpf string, salary float64, email, phone string, birthDate time.Time, address Address) (*Proposal, error) {
+func NewProposal(
+	fullName string,
+	cpf string,
+	salary float64,
+	email string,
+	phone string,
+	birthDate time.Time,
+	address Address,
+) (*Proposal, error) {
 	if fullName == "" {
 		return nil, errors.ErrFullNameRequired
 	}
