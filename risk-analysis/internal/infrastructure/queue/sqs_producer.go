@@ -32,7 +32,7 @@ func NewSQSProducer(cfg SQSConfig) (*SQSProducer, error) {
 	}, nil
 }
 
-func (p *SQSProducer) Publish(ctx context.Context, event *events.RiskEvent) error {
+func (p *SQSProducer) Publish(ctx context.Context, event *events.ProposalStatusChangedEvent) error {
 	body, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal event: %w", err)

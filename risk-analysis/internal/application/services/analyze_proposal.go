@@ -4,8 +4,7 @@ import (
 	"context"
 	"log"
 
-	events "github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
-	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/entities"
+	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/ports"
 	"github.com/google/uuid"
 )
@@ -20,104 +19,57 @@ func NewAnalyzeProposalService(producer ports.QueueProducer) *AnalyzeProposalSer
 	}
 }
 
-func (s *AnalyzeProposalService) Handle(ctx context.Context, event *entities.IncomingEvent) error {
+func (s *AnalyzeProposalService) Handle(ctx context.Context, event *domain.ProposalCreatedEvent) error {
 	log.Printf("[RiskAnalysis] Processing proposal %s", event.ProposalID)
 
-	payload, err := event.ParsePayload()
-	if err != nil {
-		log.Printf("[RiskAnalysis] Failed to parse payload: %v", err)
+	if err := event.Validate(); err != nil {
+		log.Printf("[RiskAnalysis] Invalid payload for proposal %s: %v", event.ProposalID, err)
 		return err
 	}
 
-	// Document Analyze
-	if !s.analyzeDocuments(payload) {
-		log.Printf("[RiskAnalysis] Documents rejected for proposal %s", event.ProposalID)
-		return s.publishResult(ctx, event.ProposalID, events.EventDocumentsApproved, events.EventDocumentsRejected, false)
+	payload := event.Payload
+	proposalID := event.ProposalID
+
+	// Document analysis
+	documentResult := domain.AnalyzeDocuments(payload)
+	documentApproved := documentResult.Approved
+	if !documentApproved {
+		log.Printf("[RiskAnalysis] Documents rejected for proposal %s: %s", proposalID, documentResult.Reason)
+		return s.publish(ctx, domain.EventDocumentsRejected, proposalID, documentApproved)
 	}
 
-	if err := s.publishResult(
-		ctx,
-		event.ProposalID,
-		events.EventDocumentsApproved,
-		events.EventDocumentsRejected,
-		true,
-	); err != nil {
+	log.Printf("[RiskAnalysis] Documents approved for proposal %s", proposalID)
+	if err := s.publish(ctx, domain.EventDocumentsApproved, proposalID, documentApproved); err != nil {
 		return err
 	}
 
-	// Credit Analyze
-	if !s.analyzeCredit(payload) {
-		log.Printf("[RiskAnalysis] Credit rejected for proposal %s", event.ProposalID)
-		return s.publishResult(ctx, event.ProposalID, events.EventCreditApproved, events.EventCreditRejected, false)
+	// Credit analysis
+	creditResult := domain.AnalyzeCredit(payload)
+	if !creditResult.Approved {
+		log.Printf("[RiskAnalysis] Credit rejected for proposal %s: %s", proposalID, creditResult.Reason)
+		return s.publish(ctx, domain.EventCreditRejected, proposalID, creditResult.Approved)
 	}
 
-	// Fraud Analyze
-	if !s.analyzeFraud(payload) {
-		log.Printf("[RiskAnalysis] Fraud rejected for proposal %s", event.ProposalID)
-		return s.publishResult(ctx, event.ProposalID, events.EventFraudApproved, events.EventFraudRejected, false)
+	// Fraud analysis
+	fraudResult := domain.AnalyzeFraud(payload)
+	if !fraudResult.Approved {
+		log.Printf("[RiskAnalysis] Fraud rejected for proposal %s: %s", proposalID, fraudResult.Reason)
+		return s.publish(ctx, domain.EventFraudRejected, proposalID, fraudResult.Approved)
 	}
 
-	// All approved
-	log.Printf("[RiskAnalysis] Proposal %s fully approved", event.ProposalID)
-	return s.publishFinalResult(ctx, event.ProposalID, true)
+	// All analyses passed
+	log.Printf("[RiskAnalysis] Proposal %s fully approved", proposalID)
+	return s.publish(ctx, domain.EventRiskAnalysisCompleted, proposalID, true)
 }
 
-func (s *AnalyzeProposalService) analyzeDocuments(payload *entities.ProposalPayload) bool {
-	if len(payload.CPF) != 11 {
-		log.Printf("[RiskAnalysis] Documents rejected: invalid CPF length %d", len(payload.CPF))
-		return false
-	}
-	if len(payload.FullName) < 3 {
-		log.Printf("[RiskAnalysis] Documents rejected: full name too short %s", payload.FullName)
-		return false
-	}
-
-	log.Printf("[RiskAnalysis] Documents approved for CPF %s", payload.CPF)
-	return true
-}
-
-func (s *AnalyzeProposalService) analyzeCredit(payload *entities.ProposalPayload) bool {
-	if payload.Salary <= 3000.0 {
-		log.Printf("[RiskAnalysis] Credit analysis rejected: insufficient salary %.2f", payload.Salary)
-		return false
-	}
-
-	log.Printf("[RiskAnalysis] Credit analysis approved for CPF %s", payload.CPF)
-	return true
-}
-
-func (s *AnalyzeProposalService) analyzeFraud(payload *entities.ProposalPayload) bool {
-	lastDigit := payload.CPF[len(payload.CPF)-1] - '0'
-	if lastDigit%2 != 0 {
-		log.Printf("[RiskAnalysis] Fraud analysis rejected for CPF %s", payload.CPF)
-		return false
-	}
-
-	log.Printf("[RiskAnalysis] Fraud analysis approved for CPF %s", payload.CPF)
-	return true
-}
-
-func (s *AnalyzeProposalService) publishResult(
+func (s *AnalyzeProposalService) publish(
 	ctx context.Context,
+	eventType string,
 	proposalID uuid.UUID,
-	approvedType,
-	rejectedType string,
 	approved bool,
 ) error {
-	eventType := approvedType
-	if !approved {
-		eventType = rejectedType
-	}
-	return s.producer.Publish(ctx, &events.RiskEvent{
+	return s.producer.Publish(ctx, &domain.ProposalStatusChangedEvent{
 		EventType:  eventType,
-		ProposalID: proposalID,
-		Approved:   approved,
-	})
-}
-
-func (s *AnalyzeProposalService) publishFinalResult(ctx context.Context, proposalID uuid.UUID, approved bool) error {
-	return s.producer.Publish(ctx, &events.RiskEvent{
-		EventType:  events.EventRiskAnalysisCompleted,
 		ProposalID: proposalID,
 		Approved:   approved,
 	})

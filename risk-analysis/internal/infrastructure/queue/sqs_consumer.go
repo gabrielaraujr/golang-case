@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/entities"
+	events "github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/ports"
 )
 
@@ -190,7 +190,7 @@ func (c *SQSConsumer) receiveMessages(ctx context.Context) ([]sqsMessage, error)
 func (c *SQSConsumer) processMessage(ctx context.Context, msg sqsMessage) error {
 	log.Printf("[SQSConsumer] Processing message: %s", msg.MessageId)
 
-	var event entities.IncomingEvent
+	var event events.ProposalCreatedEvent
 	if err := json.Unmarshal([]byte(msg.Body), &event); err != nil {
 		return fmt.Errorf("unmarshal event: %w", err)
 	}

@@ -7,5 +7,5 @@ import (
 )
 
 type QueueProducer interface {
-	Publish(ctx context.Context, event *events.RiskEvent) error
+	Publish(ctx context.Context, event *events.ProposalStatusChangedEvent) error
 }
