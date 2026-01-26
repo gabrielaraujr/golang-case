@@ -1,49 +1,40 @@
 # Proposal
 
 * [Overview](#overview)
-    - [Domínio](#domain)
-* [Instalação](#installation)
-    - [Repositório](#repository)
-    - [Configuração](#configure)
+  * [Domínio](#domínio)
+* [Instalação](#instalação)
+  * [Repositório](#repositório)
+  * [Configuração](#configuração)
 * [Roadmap](#roadmap)
-    - [Verificando o ambiente](#checking)
-    - [Executando o caso de uso](#run_use_case)
-    - [Consultando status](#consult_use_case)
-* [Regras de Análise](#analyze_rules)
-    - [Documentos](#document)
-    - [Crédito](#credit)
-    - [Fraude](#fraud)
-* [Testando cenários](#testing)
-* [Fluxo de Estados](#states)
-* [Monitoramento](#monitoring)
-* [Estrutura](#structure)
-
-<!--suppress HtmlDeprecatedAttribute -->
-
-<div id="overview"></div>
+  * [Verificando o ambiente](#verificando-o-ambiente)
+  * [Executando o caso de uso](#executando-o-caso-de-uso)
+  * [Consultando status](#consultar-status-da-proposta)
+* [Regras de Análise](#regras-de-análise)
+  * [Documentos](#documentos)
+  * [Crédito](#crédito)
+  * [Fraude](#fraude)
+* [Testando cenários](#testando-cenários)
+* [Fluxo de Estados](#fluxo-de-estados)
+* [Monitoramento](#monitoramento)
+* [Estrutura](#estrutura)
 
 ## Overview
 
 Case de sistema de captura e análise de propostas para abertura de contas.
 
-<div id='domain'></div>
-
 ### Domínio
 
 O sistema é composto por dois microsserviços:
 
-- **Account Service**: API REST que gerencia propostas e coordena o fluxo através de eventos.
-- **Risk Analysis Service**: Consumer de eventos que executa análises de documentos, crédito e fraude.
+* **Account Service**: API REST que gerencia propostas e coordena o fluxo através de eventos.
+* **Risk Analysis Service**: Consumer de eventos que executa análises de documentos, crédito e fraude.
 
 Para decisões arquiteturais detalhadas, veja:
-- [Decisões Arquiteturais](docs/decisoes-arquiteturais.md)
-- [Decisões Técnicas](docs/decisoes-tecnicas.md)
 
-<div id='installation'></div>
+* [Decisões Arquiteturais](docs/decisoes-arquiteturais.md)
+* [Decisões Técnicas](docs/decisoes-tecnicas.md)
 
 ## Instalação
-
-<div id='repository'></div>
 
 ### Repositório
 
@@ -52,8 +43,6 @@ Clone o repositório usando a linha de comando:
 ```bash
 git clone https://github.com/gabrielaraujr/golang-case.git
 ```
-
-<div id='configure'></div>
 
 ### Configuração
 
@@ -67,17 +56,11 @@ make configure
 
 Aguarde até todos os containers estarem prontos (~30 segundos).
 
-<div id='roadmap'></div>
-
 ## Roadmap
-
-<div id='checking'></div>
 
 ### Verificando o ambiente
 
 Para executar o caso de uso, basta estar com o ambiente docker inicializado.
-
-<div id='run_use_case'></div>
 
 ### Executando o caso de uso
 
@@ -110,8 +93,6 @@ curl -X POST http://localhost:8001/proposals \
 
 Guarde o `id` retornado na resposta.
 
-<div id='consult_use_case'></div>
-
 ### Consultar status da proposta
 
 ```bash
@@ -120,29 +101,22 @@ curl http://localhost:8001/proposals/{id}
 
 Aguarde 5-10 segundos para o processamento completo.
 
-<div id='analyze_rules'></div>
-
 ## Regras de Análise
 
-<div id='document'></div>
-
 ### Documentos
-- **Aprovado**: CPF com 11 dígitos e nome com 3+ caracteres
-- **Rejeitado**: CPF inválido ou nome muito curto
 
-<div id='credit'></div>
+* **Aprovado**: CPF com 11 dígitos e nome com 3+ caracteres
+* **Rejeitado**: CPF inválido ou nome muito curto
 
 ### Crédito
-- **Aprovado**: Salário > R$ 3.000,00
-- **Rejeitado**: Salário ≤ R$ 3.000,00
 
-<div id='fraud'></div>
+* **Aprovado**: Salário > R$ 3.000,00
+* **Rejeitado**: Salário ≤ R$ 3.000,00
 
 ### Fraude
-- **Aprovado**: Último dígito do CPF é par
-- **Rejeitado**: Último dígito do CPF é ímpar
 
-<div id='testing'></div>
+* **Aprovado**: Último dígito do CPF é par
+* **Rejeitado**: Último dígito do CPF é ímpar
 
 ## Testando cenários
 
@@ -242,20 +216,16 @@ curl -X POST http://localhost:8001/proposals \
 
 **Status final:** `rejected`
 
-<div id='states'></div>
-
 ## Fluxo de Estados
 
-```
+```text
 pending → analyzing → approved/rejected
 ```
 
-- **pending**: *Proposta criada* -> aguardando para análise
-- **analyzing**: Análises em andamento
-- **approved**: Todas as análises aprovadas
-- **rejected**: Alguma análise reprovou
-
-<div id='monitoring'></div>
+* **pending**: *Proposta criada* -> aguardando para análise
+* **analyzing**: Análises em andamento
+* **approved**: Todas as análises aprovadas
+* **rejected**: Alguma análise reprovou
 
 ## Monitoramento
 
@@ -268,17 +238,17 @@ make check-queue        # Fila de propostas
 make check-results      # Fila de análise de risco
 
 # Rodar testes
-make test
+make tests
+make test-account
+make test-risk-analysis
 
 # Remover containers e limpar cache
 make clean
 ```
 
-<div id='structure'></div>
-
 ## Estrutura
 
-```
+```text
 account/          # Serviço de gestão de propostas (API REST)
 risk-analysis/    # Serviço de análise de risco (Consumer)
 docs/             # Documentação arquitetural

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
 	"github.com/gabrielaraujr/golang-case/account/internal/domain/entities"
-	"github.com/gabrielaraujr/golang-case/account/internal/ports"
 	"github.com/google/uuid"
 )
 
@@ -102,11 +102,11 @@ func TestCreateProposalUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("should publish event after successful creation", func(t *testing.T) {
-		var publishedEvent *ports.ProposalEvent
+		var publishedEvent *events.ProposalCreatedEvent
 
 		repo := &mockRepository{}
 		producer := &mockQueueProducer{
-			publishFn: func(ctx context.Context, event *ports.ProposalEvent) error {
+			publishFn: func(ctx context.Context, event *events.ProposalCreatedEvent) error {
 				publishedEvent = event
 				return nil
 			},
@@ -122,10 +122,10 @@ func TestCreateProposalUseCase_Execute(t *testing.T) {
 		if publishedEvent == nil {
 			t.Fatal("expected event to be published")
 		}
-		if publishedEvent.EventType != "ProposalCreated" {
-			t.Errorf("expected event type %q, got %q", "ProposalCreated", publishedEvent.EventType)
+		if publishedEvent.EventType != events.EventProposalCreated {
+			t.Errorf("expected event type %q, got %q", events.EventProposalCreated, publishedEvent.EventType)
 		}
-		if publishedEvent.ProposalID != response.ID.String() {
+		if publishedEvent.ProposalID != response.ID {
 			t.Error("event proposal ID doesn't match response ID")
 		}
 	})
@@ -133,7 +133,7 @@ func TestCreateProposalUseCase_Execute(t *testing.T) {
 	t.Run("should continue when event publishing fails", func(t *testing.T) {
 		repo := &mockRepository{}
 		producer := &mockQueueProducer{
-			publishFn: func(ctx context.Context, event *ports.ProposalEvent) error {
+			publishFn: func(ctx context.Context, event *events.ProposalCreatedEvent) error {
 				return errors.New("queue error")
 			},
 		}

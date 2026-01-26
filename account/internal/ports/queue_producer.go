@@ -1,13 +1,11 @@
 package ports
 
-import "context"
+import (
+	"context"
 
-type ProposalEvent struct {
-	EventType  string      `json:"event_type"`
-	ProposalID string      `json:"proposal_id"`
-	Payload    interface{} `json:"payload"`
-}
+	events "github.com/gabrielaraujr/golang-case/account/internal/domain"
+)
 
 type QueueProducer interface {
-	Publish(ctx context.Context, event *ProposalEvent) error
+	Publish(ctx context.Context, event *events.ProposalCreatedEvent) error
 }

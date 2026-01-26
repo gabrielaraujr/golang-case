@@ -1,25 +1,33 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	appErrors "github.com/gabrielaraujr/golang-case/account/internal/application"
 	"github.com/gabrielaraujr/golang-case/account/internal/application/dto"
-	"github.com/gabrielaraujr/golang-case/account/internal/ports"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
+type createProposalExecutor interface {
+	Execute(ctx context.Context, req *dto.CreateProposalRequest) (*dto.ProposalResponse, error)
+}
+
+type getProposalExecutor interface {
+	Execute(ctx context.Context, id uuid.UUID) (*dto.ProposalResponse, error)
+}
+
 type ProposalHandler struct {
-	createUseCase ports.CreateProposalUseCase
-	getUseCase    ports.GetProposalUseCase
+	createUseCase createProposalExecutor
+	getUseCase    getProposalExecutor
 }
 
 func NewProposalHandler(
-	createUseCase ports.CreateProposalUseCase,
-	getUseCase ports.GetProposalUseCase,
+	createUseCase createProposalExecutor,
+	getUseCase getProposalExecutor,
 ) *ProposalHandler {
 	return &ProposalHandler{
 		createUseCase: createUseCase,

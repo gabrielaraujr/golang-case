@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o risk-analysis ./cmd
+RUN go mod tidy && go build -o risk-analysis ./cmd
 
 EXPOSE 8002
 
-CMD ["./risk-analysis"]
+CMD [ "/app/risk-analysis" ]
