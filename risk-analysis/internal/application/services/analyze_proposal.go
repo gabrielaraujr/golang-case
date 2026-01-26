@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
+	events "github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/entities"
-	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/events"
 	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/ports"
 	"github.com/google/uuid"
 )

@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/events"
+	events "github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 )
 
 type QueueProducer interface {

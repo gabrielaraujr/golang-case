@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain/events"
+	events "github.com/gabrielaraujr/golang-case/risk-analysis/internal/domain"
 )
 
 type SQSConfig struct {
