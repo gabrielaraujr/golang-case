@@ -46,6 +46,12 @@ git clone https://github.com/gabrielaraujr/golang-case.git
 
 ### Configuração
 
+Renomeie o arquivo `.env.example` para `.env`:
+
+```bash
+mv .env.example .env
+```
+
 Verifique se algum processo usa as portas: **4566**, **5432**, **8001**. Se alguma das portas estiver em uso, vai precisar libera-los.
 
 Para instalar e configurar o projeto, execute na raiz do projeto:
