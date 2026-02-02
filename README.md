@@ -2,6 +2,7 @@
 
 * [Overview](#overview)
   * [Domínio](#domínio)
+  * [Arquitetura](#arquitetura)
 * [Instalação](#instalação)
   * [Repositório](#repositório)
   * [Configuração](#configuração)
@@ -16,6 +17,8 @@
 * [Testando cenários](#testando-cenários)
 * [Fluxo de Estados](#fluxo-de-estados)
 * [Monitoramento](#monitoramento)
+* [Tecnologias](#tecnologias)
+* [Características Técnicas](#características-técnicas)
 * [Estrutura](#estrutura)
 
 ## Overview
@@ -26,8 +29,15 @@ Case de sistema de captura e análise de propostas para abertura de contas.
 
 O sistema é composto por dois microsserviços:
 
-* **Account Service**: API REST que gerencia propostas e coordena o fluxo através de eventos.
+* **Account Service**: API REST que gerencia propostas e coordena o fluxo/estado através de eventos.
 * **Risk Analysis Service**: Consumer de eventos que executa análises de documentos, crédito e fraude.
+
+### Arquitetura
+
+![Diagrama Arquitetural](./docs/architecture-diagram.png)
+*Diagrama arquitetural representando o desenvolvimento local*
+
+Os serviços se comunicam de forma assíncrona através de filas SQS.
 
 Para decisões arquiteturais detalhadas, veja:
 
@@ -252,10 +262,49 @@ make test-risk-analysis
 make clean
 ```
 
+## Tecnologias
+
+| Tecnologia | Versão | Uso |
+| ------------ | -------- | ----- |
+| **Go** | 1.25 | Linguagem principal |
+| **PostgreSQL** | 18.1 | Banco de dados relacional |
+| **AWS SQS** | - | Mensageria assíncrona (LocalStack em dev) |
+| **Docker** | 20+ | Containerização |
+| **Docker Compose** | 5+ | Orquestração local |
+
+## Características Técnicas
+
+* **Arquitetura Hexagonal**: Separação entre domínio, aplicação e infraestrutura
+* **Mensageria Assincrona**: Comunicação desacoplada via filas SQS
+* **Testes Unitários**: Cobertura de casos críticos (services e domain)
+* **Docker Ready**: Ambiente completo com um comando
+* **Observabilidade**: Logs e health checks
+
 ## Estrutura
 
 ```text
-account/          # Serviço de gestão de propostas (API REST)
-risk-analysis/    # Serviço de análise de risco (Consumer)
-docs/             # Documentação arquitetural
+.
+├── account/                   # Account Service (API REST)
+│   ├── cmd/main.go            # Entry point
+│   ├── internal/
+│   │   ├── adapters/http/     # HTTP handlers e rotas
+│   │   ├── application/       # Use cases e DTOs
+│   │   ├── domain/            # Entidades e regras de negócio
+│   │   ├── infrastructure/    # PostgreSQL, SQS, Logger
+│   │   └── ports/             # Interfaces (Repository, Queue)
+│   └── resources/db/          # Migrations SQL
+│
+├── risk-analysis/             # Risk Analysis Service (Consumer)
+│   ├── cmd/main.go            # Entry point
+│   ├── internal/
+│   │   ├── application/       # Serviço de análise
+│   │   ├── domain/            # Regras de análise e eventos
+│   │   ├── infrastructure/    # SQS Consumer/Producer
+│   │   └── ports/             # Interfaces
+│
+├── docs/                      # Documentação
+│   └── decisoes-*.md          # Decisões técnicas e arquiteturais iniciais
+│
+├── docker-compose.yml         # Orquestração de containers
+└── Makefile                   # Comandos de automação
 ```
